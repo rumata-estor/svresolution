@@ -1,0 +1,98 @@
+CHANGELOG
+
+Все заметные изменения в SVResolution будут документироваться в этом файле.
+Read the English version below.
+
+====================
+РУССКИЙ
+====================
+
+Версия 1.0.3
+------------
+
+Изменено
+--------
+
+- изменена логика вывода индикатора на фронтенде
+- видимый HTML-блок больше не вставляется напрямую в HTML страницы
+- на страницу теперь вставляется только безопасный JavaScript-загрузчик
+- сам индикатор загружается отдельным служебным запросом после проверки manager-сессии
+- проверка авторизации manager и разрешённой группы перенесена в служебный запрос
+- системное событие плагина изменено с OnWebPageInit на OnLoadWebDocument
+- снижена вероятность показа индикатора обычным посетителям из-за кэша страницы
+
+Исправлено
+----------
+
+- исправлена ситуация, когда индикатор мог попасть в кэш страницы и быть виден незалогиненному посетителю
+- исправлена работа служебного запроса на 404-страницах: запрос выполняется через базовый адрес сайта, а не через несуществующий URL
+
+Версия 1.0.0
+------------
+
+Первый выпуск.
+
+Добавлено
+---------
+
+- дополнение SVResolution для MODX Revolution
+- служебный индикатор на сайте
+- отображение текущего брейкпоинта Bootstrap
+- отображение текущей ширины окна браузера в пикселях
+- показ блока только для авторизованного пользователя manager из разрешённой группы
+- настройка положения блока через свойство position
+- настройка версии Bootstrap через свойство version
+- настройка цвета текста и рамки через свойство color
+- настройка цвета фона через свойство bgcolor
+- настройка разрешённой группы через свойство allowed_group
+- настройка приоритета слоя через свойство zindex
+- лексиконы на русском и английском языках
+- вывод дополнительной информации в title блока
+- использование системного события OnWebPageInit
+
+====================
+ENGLISH
+====================
+
+Version 1.0.3
+-------------
+
+Changed
+-------
+
+- changed the frontend indicator output logic
+- the visible HTML block is no longer injected directly into the page HTML
+- the page now receives only a safe JavaScript loader
+- the indicator itself is loaded through a separate service request after the manager session check
+- the manager authentication and allowed group checks were moved to the service request
+- changed the plugin system event from OnWebPageInit to OnLoadWebDocument
+- reduced the risk of exposing the indicator to regular visitors through cached page HTML
+
+Fixed
+-----
+
+- fixed a case where the indicator could be cached in the page HTML and shown to unauthenticated visitors
+- fixed the service request behavior on 404 pages by using the site base URL instead of the missing page URL
+
+Version 1.0.0
+-------------
+
+Initial release.
+
+Added
+-----
+
+- the SVResolution extra for MODX Revolution
+- a helper indicator on the frontend
+- display of the current Bootstrap breakpoint
+- display of the current browser window width in pixels
+- block visibility only for an authenticated manager user from the allowed user group
+- block position configuration through the position property
+- Bootstrap version configuration through the version property
+- text and border color configuration through the color property
+- background color configuration through the bgcolor property
+- allowed user group configuration through the allowed_group property
+- stacking priority configuration through the zindex property
+- Russian and English lexicons
+- additional information shown in the block title
+- use of the OnWebPageInit system event
