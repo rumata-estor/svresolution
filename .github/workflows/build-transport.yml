@@ -1,10 +1,121 @@
+name: Build MODX transport package
+
+on:
+  workflow_dispatch:
+    inputs:
+      modx_version:
+        description: 'MODX Revolution tag used only for the temporary build environment'
+        required: true
+        default: 'v2.8.8-pl'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build .transport.zip
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_DATABASE: modx
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mbstring, pdo, pdo_mysql, zip
+          coverage: none
+
+      - name: Install command-line tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip mysql-client
+
+      - name: Prepare MODX build environment
+        env:
+          MODX_VERSION: ${{ inputs.modx_version }}
+        run: |
+          set -euxo pipefail
+
+          mkdir -p .build-ci
+
+          curl -fsSL "https://github.com/modxcms/revolution/archive/refs/tags/${MODX_VERSION}.zip" -o .build-ci/modx.zip
+
+          unzip -q .build-ci/modx.zip -d .build-ci
+          mv .build-ci/revolution-* .build-ci/modx
+
+          mysql -h 127.0.0.1 -P 3306 -uroot -e "CREATE DATABASE IF NOT EXISTS modx CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+          php .build-ci/modx/setup/index.php \
+            --installmode=new \
+            --database_type=mysql \
+            --database_server=127.0.0.1 \
+            --database=modx \
+            --database_user=root \
+            --database_password= \
+            --database_charset=utf8mb4 \
+            --database_collation=utf8mb4_unicode_ci \
+            --table_prefix=modx_ \
+            --https_port=443 \
+            --http_host=localhost \
+            --cache_disabled=0 \
+            --inplace=1 \
+            --unattended=1 \
+            --language=en \
+            --core_path="$PWD/.build-ci/modx/core/" \
+            --context_mgr_path="$PWD/.build-ci/modx/manager/" \
+            --context_mgr_url=/manager/ \
+            --context_connectors_path="$PWD/.build-ci/modx/connectors/" \
+            --context_connectors_url=/connectors/ \
+            --context_web_path="$PWD/.build-ci/modx/" \
+            --context_web_url=/
+
+          echo "MODX build environment prepared"
+          echo "MODX core path:"
+          echo "$PWD/.build-ci/modx/core/"
+
+          echo "Initial MODX packages directory:"
+          ls -lah "$PWD/.build-ci/modx/core/packages/" || true
+
+      - name: Build transport package
+        env:
+          MODX_CORE_PATH: ${{ github.workspace }}/.build-ci/modx/core/
+        run: |
+          set -euxo pipefail
+
+          echo "Running MODX transport package build"
+          echo "MODX_CORE_PATH=$MODX_CORE_PATH"
+
+          php _build/build.transport.php
+
+          echo "Build script finished"
+
       - name: Collect transport package
         run: |
           set -euxo pipefail
+
           mkdir -p dist
 
           echo "Workspace:"
           pwd
+
+          echo "Expected MODX packages directory:"
+          ls -lah .build-ci/modx/core/packages/ || true
 
           echo "Package directories found:"
           find . -type d -name packages -print || true
@@ -21,5 +132,17 @@
             exit 1
           fi
 
+          echo "Transport package found:"
+          echo "$package_file"
+
           cp "$package_file" dist/
+
+          echo "Files prepared for artifact upload:"
           ls -lah dist/
+
+      - name: Upload transport package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: svresolution-transport-package
+          path: dist/*.transport.zip
+          if-no-files-found: error
