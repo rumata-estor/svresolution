@@ -63,7 +63,7 @@ if (!preg_match('/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/', $bgcolor)) {
 $isAllowed = false;
 
 if ($modx->user && $modx->user->isAuthenticated('mgr')) {
-    if ($allowedGroup === '' || $modx->user->isMember($allowedGroup)) {
+    if ($allowedGroup !== '' && $modx->user->isMember($allowedGroup)) {
         $isAllowed = true;
     }
 }
