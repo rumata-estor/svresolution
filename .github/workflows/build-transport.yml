@@ -1,0 +1,135 @@
+name: Build MODX transport package
+
+on:
+  workflow_dispatch:
+    inputs:
+      modx_version:
+        description: 'MODX Revolution tag used only for the temporary build environment'
+        required: true
+        default: 'v2.8.8-pl'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build .transport.zip
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_DATABASE: modx
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mbstring, pdo, pdo_mysql, zip
+          coverage: none
+
+      - name: Install command-line tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip mysql-client
+
+      - name: Prepare MODX build environment
+        env:
+          MODX_VERSION: ${{ inputs.modx_version }}
+        run: |
+          set -euxo pipefail
+
+          mkdir -p .build-ci
+          curl -fsSL "https://github.com/modxcms/revolution/archive/refs/tags/${MODX_VERSION}.zip" -o .build-ci/modx.zip
+          unzip -q .build-ci/modx.zip -d .build-ci
+          mv .build-ci/revolution-* .build-ci/modx
+
+          mysql -h 127.0.0.1 -P 3306 -uroot -e "CREATE DATABASE IF NOT EXISTS modx CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+          php .build-ci/modx/setup/index.php \
+            --installmode=new \
+            --database_type=mysql \
+            --database_server=127.0.0.1 \
+            --database=modx \
+            --database_user=root \
+            --database_password= \
+            --database_charset=utf8mb4 \
+            --database_collation=utf8mb4_unicode_ci \
+            --table_prefix=modx_ \
+            --https_port=443 \
+            --http_host=localhost \
+            --cache_disabled=0 \
+            --inplace=1 \
+            --unattended=1 \
+            --language=en \
+            --core_path="$PWD/.build-ci/modx/core/" \
+            --context_mgr_path="$PWD/.build-ci/modx/manager/" \
+            --context_mgr_url=/manager/ \
+            --context_connectors_path="$PWD/.build-ci/modx/connectors/" \
+            --context_connectors_url=/connectors/ \
+            --context_web_path="$PWD/.build-ci/modx/" \
+            --context_web_url=/
+
+      - name: Build transport package
+        env:
+          MODX_CORE_PATH: ${{ github.workspace }}/.build-ci/modx/core/
+        run: |
+          set -euxo pipefail
+          php _build/build.transport.php
+
+          echo "MODX_CORE_PATH used by build.transport.php: ${MODX_CORE_PATH}"
+          echo "Primary package directory checked by this workflow: ${MODX_CORE_PATH}packages/"
+          echo "All transport packages found after build.transport.php:"
+          find . -type f -name '*.transport.zip' -print | sort || true
+
+      - name: Collect transport package
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+
+          echo "Contents of .build-ci/modx/core/packages after build:"
+          if [ -d .build-ci/modx/core/packages ]; then
+            find .build-ci/modx/core/packages -maxdepth 2 -print | sort
+          else
+            echo ".build-ci/modx/core/packages does not exist."
+          fi
+
+          echo "Searching for transport packages in the whole workspace:"
+          mapfile -t transport_packages < <(find . -type f -name '*.transport.zip' -print | sort)
+          printf '%s\n' "${transport_packages[@]}"
+
+          if [ "${#transport_packages[@]}" -eq 0 ]; then
+            echo "::error::No *.transport.zip package was found after running _build/build.transport.php."
+            echo "Checked primary MODX package directory: .build-ci/modx/core/packages"
+            echo "Checked whole workspace with: find . -type f -name '*.transport.zip'"
+            echo "Diagnostic list of directories named packages:"
+            find . -type d -name packages -print | sort
+            exit 1
+          fi
+
+          for transport_package in "${transport_packages[@]}"; do
+            cp "${transport_package}" dist/
+          done
+
+          echo "Collected transport packages:"
+          find dist -maxdepth 1 -type f -name '*.transport.zip' -print | sort
+
+      - name: Upload transport package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: svresolution-transport-package
+          path: dist/*.transport.zip
+          if-no-files-found: error
