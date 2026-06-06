@@ -95,7 +95,7 @@ MODX_CORE_PATH=/path/to/modx/core/ php _build/build.transport.php
 
 Текущая версия предназначена для MODX Revolution 2.x.
 
-Для версии 1.0.3 на ModStore указаны:
+Для версии 1.0.4 на ModStore указаны:
 
 - минимальная версия MODX: 2.6;
 - максимальная версия MODX: 2.8;
@@ -200,7 +200,7 @@ After a successful build, the transport package will be created in the MODX pack
 
 The current version is intended for MODX Revolution 2.x.
 
-For version 1.0.3, the ModStore package settings are:
+For version 1.0.4, the ModStore package settings are:
 
 - minimum MODX version: 2.6;
 - maximum MODX version: 2.8;
