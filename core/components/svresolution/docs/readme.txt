@@ -1,7 +1,7 @@
 SVResolution
 ====================
 
-Version: 1.0.3
+Version: 1.0.4
 Author: Александр Ларин (Палочкин)
 License: MIT
 

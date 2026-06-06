@@ -7,6 +7,14 @@ Read the English version below.
 РУССКИЙ
 ====================
 
+Версия 1.0.4
+------------
+
+Исправлено
+----------
+
+- усилена проверка свойства allowed_group перед показом индикатора
+
 Версия 1.0.3
 ------------
 
@@ -53,6 +61,14 @@ Read the English version below.
 ====================
 ENGLISH
 ====================
+
+Version 1.0.4
+-------------
+
+Fixed
+-----
+
+- strengthened the allowed_group property check before showing the indicator
 
 Version 1.0.3
 -------------

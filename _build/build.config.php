@@ -18,7 +18,7 @@ if (!defined('SVR_PKG_NAME_LOWER')) {
 }
 
 if (!defined('SVR_PKG_VERSION')) {
-    define('SVR_PKG_VERSION', '1.0.3');
+    define('SVR_PKG_VERSION', '1.0.4');
 }
 
 if (!defined('SVR_PKG_RELEASE')) {
